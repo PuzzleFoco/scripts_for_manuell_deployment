@@ -1,0 +1,88 @@
+master:
+  adminPassword: test123
+  installPlugins:
+    - matrix-auth:2.4.2
+    - kubernetes:1.21.2
+    - workflow-job:2.36
+    - workflow-aggregator:2.6
+    - credentials-binding:1.20
+    - git:4.2.0
+    - credentials:2.3.0
+    - job-dsl:1.76
+    - kubernetes-cd:2.3.0
+    - kubernetes-cli:1.8.2
+  JCasC:
+    enabled: true
+    pluginVersion: "1.36"
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
+        credentials:
+          system:
+            domainCredentials:
+              - credentials:
+                - usernamePassword:
+                    scope: GLOBAL
+                    id: "docker-hub-credentials"
+                    username: "fabiuse"
+                    password: "9c47c011-387b-4c98-8b48-2fd4033dadf6"
+                - string:
+                    scope: GLOBAL
+                    id: "jenkins-service-account"
+                    description: ""
+                    secret: "${TOKEN}"
+        jobs:
+          - script: >
+              pipelineJob('pipeline') {
+                triggers {
+                  cron('@daily')
+                }
+                definition {
+                  cpsScm {
+                    scriptPath 'Jenkinsfile'
+                    scm {
+                      git {
+                        remote { url 'https://gitlab.hrz.tu-chemnitz.de/faeng--tu-chemnitz.de/react_docker_app.git'}
+                        branch ''
+                        extensions {}
+                      }
+                    }
+                  }
+                }
+              }
+  extraPorts:
+  - name: ssh
+    port: 2222
+    externalPort: 22
+    protocol: TCP
+  - name: slvlistener-jen
+    port: 50000
+    externalPort: 50000
+    protocol: TCP
+  ingress:
+    enabled: true
+    apiVersion: "networking.k8s.io/v1beta1"
+    hostName: jenkins.masterthesis.online
+    tls:
+    - secretName: 
+      hosts:
+        - jenkins.masterthesis.online
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+  serviceType: ClusterIP
+
+agent:
+  enabled: true
+  image: fabiuse/jenkins-with-docker
+  tag: latest
+  alwaysPullImage: true
+  privileged: true
+  volumes:
+    - type: HostPath
+      hostPath: /var/run/docker.sock
+      mountPath: /var/run/docker.sock
+
+networkPolicy:
+  enabled: true

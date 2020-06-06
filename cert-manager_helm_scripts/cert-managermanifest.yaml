@@ -1,0 +1,43 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+  namespace: cert-manager
+spec:
+  acme:
+    email: faeng@hrz.tu-chemnitz.de
+    server: https://acme-v02.api.letsencrypt.org/directory
+    #server: https://acme-staging-v02.api.letsencrypt.org/directory #This is the staging Server from let's encrypt use it when trying things out
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+    - dns01:
+        azuredns:
+          # Service principal clientId (also called appId)
+          clientID: e13b73a1-06ef-41c7-91ba-4230393abd64
+          clientSecretSecretRef:
+            key: password
+            name: secret-azure-config
+          # Azure subscription Id
+          subscriptionID: b1d73fee-1a54-4568-b7d1-2358cdc8ae38
+          # Azure AD tenant Id
+          tenantID: 35c0a365-ef2a-46f3-a168-499fea6e4f21
+          # ResourceGroup name where dns zone is provisioned
+          resourceGroupName: dnsresourcegroup
+          # Name of the DNS Zone
+          hostedZoneName: masterthesis.online
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: wildcard
+  namespace: cert-manager
+spec:
+  secretName: wildcard
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt
+  commonName: '*.masterthesis.online' 
+  dnsNames:
+  - masterthesis.online
+  - '*.masterthesis.online'
